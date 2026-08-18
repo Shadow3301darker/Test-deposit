@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090b10">
+<title>Veil — Noromaid Web Test</title>
+<style>
+:root { color-scheme: dark; font-family: -apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,sans-serif; }
+body { margin:0; background:#090b10; color:#eee; }
+main { max-width:760px; margin:auto; padding:24px 18px 40px; }
+h1 { margin-bottom:4px; }
+.muted { color:#9aa1ad; }
+.card { background:#11151d; border:1px solid #242a35; border-radius:16px; padding:16px; margin:14px 0; }
+button,input { font:inherit; }
+button { border:0; border-radius:12px; padding:11px 15px; background:#e8eaf0; color:#090b10; font-weight:700; }
+button:disabled { opacity:.45; }
+input[type=file] { width:100%; margin:10px 0; }
+pre { white-space:pre-wrap; word-break:break-word; background:#090b10; padding:12px; border-radius:12px; min-height:70px; }
+textarea { width:100%; box-sizing:border-box; min-height:100px; background:#090b10; color:#eee; border:1px solid #303744; border-radius:12px; padding:12px; }
+.row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+.ok { color:#72e6a1; }
+.bad { color:#ff7d86; }
+.warn { color:#ffd166; }
+.small { font-size:.9rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>VEIL // Noromaid Web Test</h1>
+  <div class="muted">Disposable prototype. No world engine. No background process.</div>
+
+  <section class="card">
+    <h2>1. WebGPU</h2>
+    <pre id="gpu">Checking…</pre>
+  </section>
+
+  <section class="card">
+    <h2>2. Load GGUF</h2>
+    <p class="small muted">Pick your local Noromaid GGUF. The file is read locally by this page; it is not uploaded anywhere by this app.</p>
+    <input id="modelFile" type="file" accept=".gguf,application/octet-stream">
+    <div class="row">
+      <button id="load" disabled>Load model</button>
+      <span id="fileInfo" class="small muted">No model selected.</span>
+    </div>
+    <pre id="modelStatus">Waiting.</pre>
+  </section>
+
+  <section class="card">
+    <h2>3. Tiny inference test</h2>
+    <textarea id="prompt">You are Noromaid. Reply with one short sentence confirming that local browser inference works.</textarea>
+    <br><br>
+    <button id="run" disabled>Generate</button>
+    <pre id="output">Model not loaded.</pre>
+  </section>
+
+  <section class="card">
+    <h2>What success looks like</h2>
+    <p class="small">
+      WebGPU: <b>available</b> → model loads → one response appears.
+      If the model is too large for this direct-file path, that is expected; wllama's browser API has a 2 GB ArrayBuffer limit and larger GGUFs need to be split into chunks.
+    </p>
+  </section>
+</main>
+
+<script type="module">
+const $ = id => document.getElementById(id);
+let selectedFile = null;
+let wllama = null;
+
+async function checkGPU() {
+  if (!navigator.gpu) {
+    $("gpu").innerHTML = '<span class="bad">❌ navigator.gpu is unavailable.</span>';
+    return false;
+  }
+  try {
+    const adapter = await navigator.gpu.requestAdapter();
+    if (!adapter) throw new Error("No GPU adapter returned.");
+    $("gpu").innerHTML = '<span class="ok">✅ WebGPU adapter found.</span>';
+    return true;
+  } catch (e) {
+    $("gpu").innerHTML = '<span class="bad">❌ WebGPU failed: ' + e.message + '</span>';
+    return false;
+  }
+}
+
+const gpuOK = await checkGPU();
+
+$("modelFile").addEventListener("change", e => {
+  selectedFile = e.target.files?.[0] || null;
+  if (!selectedFile) return;
+  const gb = selectedFile.size / 1024**3;
+  $("fileInfo").textContent = `${selectedFile.name} — ${gb.toFixed(2)} GiB`;
+  if (selectedFile.size > 2 * 1024**3) {
+    $("modelStatus").innerHTML =
+      '<span class="warn">⚠ This GGUF is over 2 GiB. Direct single-file loading is not supported by this prototype. It will need to be split into GGUF chunks first.</span>';
+    $("load").disabled = true;
+  } else {
+    $("modelStatus").textContent = "Ready to attempt loading.";
+    $("load").disabled = !gpuOK;
+  }
+});
+
+$("load").addEventListener("click", async () => {
+  if (!selectedFile) return;
+  $("load").disabled = true;
+  $("modelStatus").textContent = "Loading browser inference runtime…";
+
+  try {
+    const mod = await import("https://cdn.jsdelivr.net/npm/@reeselevine/wllama-webgpu@1.0.0/esm/index.js");
+    const WasmFromCDN = (await import("https://cdn.jsdelivr.net/npm/@reeselevine/wllama-webgpu@1.0.0/esm/wasm-from-cdn.js")).default;
+
+    const Wllama = mod.Wllama;
+    wllama = new Wllama(WasmFromCDN, { backend: "webgpu" });
+
+    $("modelStatus").textContent = "Loading GGUF into the local runtime…";
+    await wllama.loadModel([selectedFile], {
+      n_ctx: 2048,
+      n_gpu_layers: -1,
+      progressCallback: ({ loaded, total }) => {
+        if (total) {
+          $("modelStatus").textContent =
+            `Loading… ${Math.round(loaded / total * 100)}%`;
+        }
+      }
+    });
+
+    $("modelStatus").innerHTML = '<span class="ok">✅ Model loaded locally.</span>';
+    $("run").disabled = false;
+  } catch (e) {
+    console.error(e);
+    $("modelStatus").innerHTML =
+      '<span class="bad">❌ Load failed.</span>\n\n' + (e?.stack || e);
+  } finally {
+    $("load").disabled = false;
+  }
+});
+
+$("run").addEventListener("click", async () => {
+  if (!wllama) return;
+  $("run").disabled = true;
+  $("output").textContent = "Generating…";
+  try {
+    const result = await wllama.createChatCompletion({
+      messages: [{ role: "user", content: $("prompt").value }],
+      max_tokens: 80,
+      temperature: 0.7,
+      top_p: 0.9
+    });
+    $("output").textContent = result.choices?.[0]?.message?.content || JSON.stringify(result, null, 2);
+  } catch (e) {
+    $("output").textContent = "❌ Inference failed:\n\n" + (e?.stack || e);
+  } finally {
+    $("run").disabled = false;
+  }
+});
+</script>
+</body>
+</html>
