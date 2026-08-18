@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090b10">
+<title>VEIL WORLD // Phase One</title>
+<style>
+:root{color-scheme:dark;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:#090b10;color:#eee}
+main{max-width:820px;margin:auto;padding:22px 16px 36px}
+h1{margin:0 0 4px;font-size:28px}.sub{color:#8f98a8;margin-bottom:18px}
+.card{background:#11151d;border:1px solid #252c38;border-radius:16px;padding:15px;margin:12px 0}
+textarea,input{width:100%;background:#090b10;color:#eee;border:1px solid #303744;border-radius:11px;padding:11px;font:inherit}
+textarea{min-height:90px;resize:vertical}
+button{border:0;border-radius:11px;padding:10px 14px;background:#e8eaf0;color:#090b10;font:inherit;font-weight:700}
+button:disabled{opacity:.45}.row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+pre{white-space:pre-wrap;word-break:break-word;background:#090b10;border-radius:11px;padding:12px;min-height:60px}
+.ok{color:#72e6a1}.bad{color:#ff7d86}.muted{color:#8f98a8}.tag{display:inline-block;border:1px solid #303744;border-radius:999px;padding:4px 8px;margin:3px;font-size:12px}
+#chat{max-height:360px;overflow:auto}.msg{padding:10px 12px;border-radius:12px;margin:7px 0;white-space:pre-wrap}.user{background:#202735}.ai{background:#151b24}
+</style>
+</head>
+<body>
+<main>
+<h1>VEIL WORLD // Phase One</h1>
+<div class="sub">Local GGUF + persistent memory. Memory is deliberately manual in this prototype.</div>
+
+<section class="card">
+<h2>1. Model</h2>
+<pre id="gpu">Checking WebGPU…</pre>
+<input id="modelFile" type="file" accept=".gguf,application/octet-stream">
+<div class="row" style="margin-top:9px"><button id="load" disabled>Load model</button><span id="fileInfo" class="muted">No model selected.</span></div>
+<pre id="status">Waiting.</pre>
+</section>
+
+<section class="card">
+<h2>2. Chat</h2>
+<div id="chat"></div>
+<textarea id="prompt" placeholder="Talk to the character…"></textarea>
+<div class="row" style="margin-top:9px">
+<button id="send" disabled>Generate</button>
+<button id="clearChat">Clear chat</button>
+</div>
+</section>
+
+<section class="card">
+<h2>3. Persistent memory</h2>
+<p class="muted">Select a piece of information and save it. It survives a page reload.</p>
+<input id="memoryText" placeholder="Example: Mara's brother is Kellan.">
+<div class="row" style="margin-top:9px">
+<button id="remember">💾 Remember</button>
+<button id="clearMemory">Clear memory</button>
+</div>
+<pre id="memoryStatus">Loading memory…</pre>
+<div id="memoryList"></div>
+</section>
+
+<section class="card">
+<h2>4. Debug</h2>
+<pre id="debug">Phase One diagnostics.</pre>
+</section>
+</main>
+
+<script type="module">
+const $=id=>document.getElementById(id);
+let selectedFile=null,wllama=null,db=null,memories=[];
+
+function addChat(role,text){
+ const d=document.createElement("div");
+ d.className="msg "+(role==="user"?"user":"ai");
+ d.textContent=(role==="user"?"You: ":"Veil: ")+text;
+ $("chat").appendChild(d);$("chat").scrollTop=$("chat").scrollHeight;
+}
+function renderMemory(){
+ $("memoryStatus").textContent=memories.length
+  ? `${memories.length} persistent memor${memories.length===1?"y":"ies"} loaded from IndexedDB.`
+  : "Memory is empty.";
+ $("memoryList").innerHTML=memories.length
+  ? memories.map((m,i)=>`<span class="tag">#${i+1} ${m.text.replace(/</g,"&lt;")}</span>`).join("")
+  : '<span class="muted">No memories yet.</span>';
+}
+function openDB(){
+ return new Promise((resolve,reject)=>{
+  const req=indexedDB.open("veil-world-phase1",1);
+  req.onupgradeneeded=()=>{const d=req.result;if(!d.objectStoreNames.contains("memories"))d.createObjectStore("memories",{keyPath:"id",autoIncrement:true});};
+  req.onsuccess=()=>{db=req.result;resolve()};
+  req.onerror=()=>reject(req.error);
+ });
+}
+function loadMemories(){
+ return new Promise((resolve,reject)=>{
+  const req=db.transaction("memories","readonly").objectStore("memories").getAll();
+  req.onsuccess=()=>{memories=req.result||[];renderMemory();resolve()};
+  req.onerror=()=>reject(req.error);
+ });
+}
+function saveMemory(text){
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction("memories","readwrite");
+  tx.objectStore("memories").add({text,createdAt:Date.now()});
+  tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
+ });
+}
+function wipeMemory(){
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction("memories","readwrite");
+  tx.objectStore("memories").clear();
+  tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
+ });
+}
+function relevantMemories(prompt){
+ const words=prompt.toLowerCase().split(/\s+/).filter(w=>w.length>3);
+ return memories.map(m=>({text:m.text,score:words.filter(w=>m.text.toLowerCase().includes(w)).length}))
+  .sort((a,b)=>b.score-a.score).slice(0,12).map(x=>x.text);
+}
+async function checkGPU(){
+ if(!navigator.gpu){$("gpu").textContent="❌ WebGPU unavailable.";return false}
+ try{const a=await navigator.gpu.requestAdapter();if(!a)throw Error("No adapter");
+ $("gpu").textContent="✅ WebGPU adapter found.";return true}
+ catch(e){$("gpu").textContent="❌ WebGPU failed: "+e.message;return false}
+}
+const gpuOK=await checkGPU();
+await openDB();await loadMemories();
+$("debug").textContent=`IndexedDB: ready\nMemories: ${memories.length}\nReload this page to verify persistence.`;
+
+$("modelFile").onchange=e=>{
+ selectedFile=e.target.files?.[0]||null;
+ if(!selectedFile)return;
+ $("fileInfo").textContent=`${selectedFile.name} — ${(selectedFile.size/1024**3).toFixed(2)} GiB`;
+ $("load").disabled=!gpuOK;
+};
+$("load").onclick=async()=>{
+ $("load").disabled=true;$("status").textContent="Loading runtime…";
+ try{
+  const mod=await import("https://cdn.jsdelivr.net/npm/@reeselevine/wllama-webgpu@1.0.0/esm/index.js");
+  const WasmFromCDN=(await import("https://cdn.jsdelivr.net/npm/@reeselevine/wllama-webgpu@1.0.0/esm/wasm-from-cdn.js")).default;
+  wllama=new mod.Wllama(WasmFromCDN,{backend:"webgpu"});
+  await wllama.loadModel([selectedFile],{n_ctx:2048,n_gpu_layers:-1});
+  $("status").textContent="✅ Model loaded locally.";
+  $("send").disabled=false;
+ }catch(e){$("status").textContent="❌ Load failed:\n\n"+(e?.stack||e);}
+ finally{$("load").disabled=false}
+};
+$("send").onclick=async()=>{
+ const text=$("prompt").value.trim();if(!text||!wllama)return;
+ $("prompt").value="";addChat("user",text);$("send").disabled=true;
+ const mem=relevantMemories(text);
+ const memoryBlock=mem.length?`\nRelevant persistent memories:\n- ${mem.join("\n- ")}`:"";
+ const prompt=`<|im_start|>system
+You are VEIL, a concise immersive roleplay assistant. Stay in character when appropriate. Use supplied memories as facts, but do not invent memories.${memoryBlock}
+<|im_end|>
+<|im_start|>user
+${text}
+<|im_end|>
+<|im_start|>assistant
+`;
+ try{
+  const result=await wllama.createCompletion(prompt,{nPredict:180,sampling:{temp:0.7,top_k:40,top_p:0.9}});
+  const out=typeof result==="string"?result:(result?.choices?.[0]?.text??JSON.stringify(result));
+  addChat("ai",out.trim());
+  $("debug").textContent=`IndexedDB: ready\nMemories: ${memories.length}\nInjected this turn: ${mem.length}\nOutput chars: ${out.length}`;
+ }catch(e){addChat("ai","❌ Inference failed:\n"+(e?.message||e));}
+ finally{$("send").disabled=false}
+};
+$("remember").onclick=async()=>{
+ const text=$("memoryText").value.trim();if(!text)return;
+ await saveMemory(text);await loadMemories();$("memoryText").value="";
+ $("debug").textContent=`IndexedDB: ready\nMemories: ${memories.length}\nSaved memory. Reload page to test persistence.`;
+};
+$("clearMemory").onclick=async()=>{
+ if(!confirm("Delete all persistent memories?"))return;
+ await wipeMemory();await loadMemories();
+};
+$("clearChat").onclick=()=>$("chat").innerHTML="";
+</script>
+</body>
+</html>
