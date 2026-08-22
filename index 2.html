@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090b10">
+<title>VEIL WORLD // Single-AI Alpha</title>
+<style>
+:root{color-scheme:dark;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,sans-serif;--bg:#080a0f;--panel:#10141c;--panel2:#0b0f15;--line:#27303d;--text:#eef1f5;--muted:#8994a5;--accent:#78e5e1;--good:#72e6a1;--bad:#ff7d86;--warn:#f0c674}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% -10%,#131a27 0,#080a0f 42%);color:var(--text)}main{max-width:1100px;margin:auto;padding:20px 14px 50px}h1,h2,h3{margin:0 0 8px}h1{font-size:28px;letter-spacing:.02em}.sub,.muted{color:var(--muted)}.sub{margin-bottom:16px}.card{background:linear-gradient(180deg,#11161f,#0d1118);border:1px solid var(--line);border-radius:16px;padding:15px;margin:12px 0;box-shadow:0 10px 30px #0004}input,textarea,select{width:100%;background:#080b10;color:var(--text);border:1px solid #303a49;border-radius:11px;padding:10px;font:inherit}textarea{min-height:92px;resize:vertical}button{border:1px solid transparent;border-radius:11px;padding:10px 13px;background:#e9edf2;color:#080a0f;font:inherit;font-weight:750;cursor:pointer}button.secondary{background:#151b24;color:var(--text);border-color:#303a49}button.danger{background:#2b1519;color:#ffadb3;border-color:#573039}button:disabled{opacity:.4;cursor:not-allowed}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.row>*{flex:0 0 auto}.grow{flex:1 1 180px!important}.status{white-space:pre-wrap;word-break:break-word;background:#080b10;border:1px solid #202936;border-radius:11px;padding:11px;margin-top:10px}.tag,.pill{display:inline-block;border:1px solid #303a49;border-radius:999px;padding:4px 8px;font-size:11px}.pill{background:#111720}.ok{color:var(--good)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+.tabs{display:flex;gap:6px;overflow:auto;margin:10px 0 14px}.tab{background:#0e131b;color:var(--muted);border:1px solid var(--line)}.tab.active{background:#e9edf2;color:#080a0f}.view{display:none}.view.active{display:block}
+.chat{height:260px;overflow:auto;background:#080b10;border:1px solid #202936;border-radius:12px;padding:8px}.msg{padding:9px 11px;border-radius:11px;margin:6px 0;white-space:pre-wrap}.user{background:#202936}.ai{background:#141b24}
+.world-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px}.kpi{background:#0a0e14;border:1px solid #28313e;border-radius:12px;padding:9px;min-width:0}.kpi strong{display:block;font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.kpi span{display:block;color:var(--muted);font-size:10px;margin-top:3px}.world-grid{display:grid;grid-template-columns:1.25fr .9fr;gap:12px;margin-top:12px}.locations{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.loc{background:#0a0e14;border:1px solid #28313e;border-radius:12px;padding:10px;min-height:72px}.loc b{display:block}.loc small{color:var(--muted)}.agents{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.agent{background:#0a0e14;border:1px solid #28313e;border-radius:12px;padding:10px;cursor:pointer}.agent:hover{border-color:#566376}.agent.selected{border-color:var(--accent);box-shadow:0 0 0 1px #78e5e122 inset}.micro{font-size:11px;color:var(--muted)}.stat{display:flex;justify-content:space-between;font-size:11px;margin-top:6px}.bar{height:5px;background:#202733;border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;background:var(--accent)}.log{max-height:360px;overflow:auto;background:#080b10;border:1px solid #202936;border-radius:12px;padding:9px;font:11px ui-monospace,SFMono-Regular,Menlo,monospace}.logline{padding:5px 0;border-bottom:1px solid #1c232d}.logline:last-child{border-bottom:0}.memory-box{max-height:240px;overflow:auto}.jsonbox{max-height:360px;overflow:auto;font:11px ui-monospace,SFMono-Regular,Menlo,monospace}
+.schema{background:#080b10;border:1px solid #202936;border-radius:11px;padding:10px;font:11px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap}.notice{border-left:3px solid var(--accent);padding:9px 11px;background:#0b1218;border-radius:8px;margin:10px 0}.footer{color:#667182;font-size:11px;margin-top:20px;text-align:center}@media(max-width:800px){.world-grid{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.locations{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.agents{grid-template-columns:1fr}.locations{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<main>
+<header>
+<h1>VEIL WORLD // Single-AI Alpha</h1>
+<div class="sub">One local model. Many persistent lives. World state and long-term memory live outside the model.</div>
+</header>
+
+<div class="tabs">
+<button class="tab active" data-view="worldView">World</button>
+<button class="tab" data-view="modelView">Model</button>
+<button class="tab" data-view="chatView">Chat</button>
+<button class="tab" data-view="memoryView">Memory</button>
+<button class="tab" data-view="debugView">Diagnostics</button>
+</div>
+
+<section id="worldView" class="view active">
+<div class="card">
+<div class="world-head">
+<div><h2>Society Simulation</h2><div class="muted">The model proposes actions. The rigid engine validates and commits them.</div></div>
+<div class="row"><span id="modelBadge" class="tag">MODEL OFFLINE</span><span id="worldBadge" class="tag">WORLD PAUSED</span></div>
+</div>
+<div class="notice"><b>Architecture:</b> one AI call → decisions for every agent → validation → state mutation → memory/event write → next tick.</div>
+<div class="row">
+<input id="worldSeed" class="grow" value="VEIL-001" placeholder="World seed">
+<label class="tag">Population <input id="population" type="number" min="2" max="12" value="8" style="width:65px;margin-left:5px;padding:5px"></label>
+<select id="tickRate" style="width:auto"><option value="5">5 min/tick</option><option value="15" selected>15 min/tick</option><option value="30">30 min/tick</option><option value="60">60 min/tick</option></select>
+<button id="worldStart" class="secondary">Start</button>
+<button id="worldStep" disabled>AI Step</button>
+<button id="worldReset" class="secondary">Reset</button>
+<button id="worldSave" class="secondary">Export JSON</button>
+<label class="secondary" style="padding:9px 12px;border:1px solid #303a49;border-radius:11px;cursor:pointer">Import JSON<input id="worldLoadFile" type="file" accept=".json,application/json" hidden></label>
+</div>
+<div class="kpis">
+<div class="kpi"><strong id="worldClock">—</strong><span>SIM TIME</span></div>
+<div class="kpi"><strong id="worldPopulation">0</strong><span>AGENTS</span></div>
+<div class="kpi"><strong id="worldActions">0</strong><span>AI TURNS</span></div>
+<div class="kpi"><strong id="worldEvents">0</strong><span>EVENTS</span></div>
+<div class="kpi"><strong id="worldMemories">0</strong><span>MEMORIES</span></div>
+</div>
+<div id="worldAiStatus" class="status">Load a local GGUF model in the Model tab, then run AI Step.</div>
+</div>
+
+<div class="world-grid">
+<div>
+<div class="card"><h3>World Map</h3><div id="worldMap" class="locations"></div></div>
+<div class="card"><h3>Agents</h3><div id="agentGrid" class="agents"></div></div>
+</div>
+<div>
+<div class="card"><h3>Selected Agent</h3><div id="agentInspector">Select an agent.</div></div>
+<div class="card"><h3>Event Log</h3><div id="worldLog" class="log"></div></div>
+</div>
+</div>
+</section>
+
+<section id="modelView" class="view">
+<div class="card"><h2>Local Model</h2><p class="muted">The same loaded model is used for normal chat and the entire society. Nothing is sent to a remote inference API by this page.</p>
+<div id="gpu" class="status">Checking WebGPU…</div>
+<input id="modelFile" type="file" accept=".gguf,application/octet-stream" style="margin-top:10px">
+<div class="row" style="margin-top:9px"><button id="load" disabled>Load GGUF</button><span id="fileInfo" class="muted">No model selected.</span></div>
+<div id="status" class="status">Waiting.</div></div>
+</section>
+
+<section id="chatView" class="view">
+<div class="card"><h2>Direct Chat</h2><div id="chat" class="chat"></div><textarea id="prompt" placeholder="Talk to VEIL directly…" style="margin-top:8px"></textarea><div class="row" style="margin-top:8px"><button id="send" disabled>Generate</button><button id="clearChat" class="secondary">Clear</button></div></div>
+</section>
+
+<section id="memoryView" class="view">
+<div class="card"><h2>Persistent Memory</h2><p class="muted">Manual memories are separate from the World JSON. World memory is exported with the society itself.</p><input id="memoryText" placeholder="Example: Mara's brother is Kellan."><div class="row" style="margin-top:8px"><button id="remember">Remember</button><button id="clearMemory" class="danger">Clear manual memory</button></div><div id="memoryStatus" class="status">Loading…</div><div id="memoryList" class="memory-box" style="margin-top:8px"></div></div></section>
+
+<section id="debugView" class="view">
+<div class="card"><h2>Diagnostics</h2><pre id="debug" class="status">Starting…</pre></div>
+<div class="card"><h3>AI World Output Contract</h3><div class="schema">{"tick_summary":"...","agent_updates":[{"id":"A1","action":"work","target_location":"work","reason":"...","needs":{"energy":-5},"money_delta":6,"skill_delta":{"work":1},"relationship_changes":[{"agent_id":"A2","delta":2}],"new_memories":["..."]}],"world_events":["..."]}</div><p class="muted" style="margin-bottom:0">Only this schema is accepted. The model cannot directly rewrite arbitrary world state.</p></div>
+<div class="card"><h3>Current World JSON</h3><pre id="worldJson" class="status jsonbox">—</pre></div>
+</section>
+
+<div class="footer">VEIL WORLD alpha • experimental single-model society simulation</div>
+</main>
+
+<script type="module">
+const $=id=>document.getElementById(id);
+let selectedFile=null,wllama=null,db=null,manualMemories=[],busy=false;
+let world=null,worldRunning=false,worldTimer=null,selectedAgentId=null,worldBusy=false;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+// ---------- tabs ----------
+document.querySelectorAll('.tab').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));btn.classList.add('active');$(btn.dataset.view).classList.add('active');if(btn.dataset.view==='debugView')renderWorldJson()});
+
+// ---------- local model + manual memory ----------
+function addChat(role,text){const d=document.createElement('div');d.className='msg '+(role==='user'?'user':'ai');d.textContent=(role==='user'?'You: ':'VEIL: ')+text;$('chat').appendChild(d);$('chat').scrollTop=$('chat').scrollHeight}
+function renderManualMemory(){$('memoryStatus').textContent=manualMemories.length?`${manualMemories.length} manual memories loaded from IndexedDB.`:'Manual memory is empty.';$('memoryList').innerHTML=manualMemories.length?manualMemories.map((m,i)=>`<span class="tag">#${i+1} ${escapeHTML(m.text)}</span>`).join(' '):'<span class="muted">No manual memories.</span>'}
+function escapeHTML(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function openDB(){return new Promise((resolve,reject)=>{const req=indexedDB.open('veil-world-alpha',1);req.onupgradeneeded=()=>{const d=req.result;if(!d.objectStoreNames.contains('memories'))d.createObjectStore('memories',{keyPath:'id',autoIncrement:true})};req.onsuccess=()=>{db=req.result;resolve()};req.onerror=()=>reject(req.error)})}
+function loadManualMemories(){return new Promise((resolve,reject)=>{const req=db.transaction('memories','readonly').objectStore('memories').getAll();req.onsuccess=()=>{manualMemories=req.result||[];renderManualMemory();resolve()};req.onerror=()=>reject(req.error)})}
+function saveManualMemory(text){return new Promise((resolve,reject)=>{const tx=db.transaction('memories','readwrite');tx.objectStore('memories').add({text,createdAt:Date.now()});tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}
+function wipeManualMemory(){return new Promise((resolve,reject)=>{const tx=db.transaction('memories','readwrite');tx.objectStore('memories').clear();tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}
+function relevantManualMemory(text){const words=text.toLowerCase().split(/\s+/).filter(w=>w.length>3);return manualMemories.map(m=>({text:m.text,score:words.filter(w=>m.text.toLowerCase().includes(w)).length})).sort((a,b)=>b.score-a.score).slice(0,8).map(x=>x.text)}
+function buildChatPrompt(text){const mem=relevantManualMemory(text);return `<|im_start|>system\nYou are VEIL, a concise immersive AI. Use supplied memories as facts and never invent them.${mem.length?'\nRelevant memories:\n- '+mem.join('\n- '):''}\n<|im_end|>\n<|im_start|>user\n${text}\n<|im_end|>\n<|im_start|>assistant\n`}
+function checkGPU(){if(!navigator.gpu){$('gpu').textContent='WebGPU API not exposed. Model loading may still report the actual compatibility error.';return false}$('gpu').textContent='WebGPU API detected. Ready to try local inference.';return true}
+async function generate(text,limit=96){if(!wllama)throw Error('Model not loaded.');await sleep(120);const result=await wllama.createCompletion(buildChatPrompt(text),{nPredict:limit,sampling:{temp:.7,top_k:40,top_p:.9}});return typeof result==='string'?result.trim():(result?.choices?.[0]?.text??'').trim()}
+
+$('modelFile').onchange=e=>{selectedFile=e.target.files?.[0]||null;$('load').disabled=!selectedFile;if(selectedFile){$('fileInfo').textContent=`${selectedFile.name} — ${(selectedFile.size/1024**3).toFixed(2)} GiB`;$('status').textContent='File selected. Tap Load GGUF.'}}
+$('load').onclick=async()=>{if(busy||!selectedFile)return;busy=true;$('load').disabled=true;$('status').textContent='Loading Wllama runtime…';try{const mod=await import('https://cdn.jsdelivr.net/npm/@reeselevine/wllama-webgpu@1.0.0/esm/index.js');const WasmFromCDN=(await import('https://cdn.jsdelivr.net/npm/@reeselevine/wllama-webgpu@1.0.0/esm/wasm-from-cdn.js')).default;wllama=new mod.Wllama(WasmFromCDN,{backend:'webgpu'});await wllama.loadModel([selectedFile],{n_ctx:4096,n_gpu_layers:-1});$('status').textContent='Model loaded locally. The same model is now available to World.';$('send').disabled=false;$('worldStep').disabled=false;$('modelBadge').textContent='MODEL ONLINE';$('modelBadge').className='tag ok';$('worldAiStatus').textContent='Model ready. Run AI Step to advance the society.';$('worldStart').disabled=false}catch(e){wllama=null;$('status').textContent='Load failed:\n'+(e?.stack||e);$('modelBadge').textContent='MODEL OFFLINE';$('worldStep').disabled=true}finally{$('load').disabled=false;busy=false}}
+$('send').onclick=async()=>{if(busy||!wllama)return;const text=$('prompt').value.trim();if(!text)return;busy=true;$('prompt').value='';addChat('user',text);$('send').disabled=true;try{addChat('ai',await generate(text,160)||'(empty response)')}catch(e){addChat('ai','Inference failed: '+(e?.message||e))}finally{$('send').disabled=false;busy=false}}
+$('clearChat').onclick=()=>$('chat').innerHTML='';
+$('remember').onclick=async()=>{const text=$('memoryText').value.trim();if(!text||!db)return;await saveManualMemory(text);await loadManualMemories();$('memoryText').value=''};
+$('clearMemory').onclick=async()=>{if(!db||!confirm('Delete all manual memories?'))return;await wipeManualMemory();await loadManualMemories()};
+
+// ---------- rigid world ----------
+const WORLD_VERSION=3;
+const LOCATIONS={home:{name:'Residential Block',kind:'home',links:['market','park','work','institute']},market:{name:'Market',kind:'commerce',links:['home','cafe','work']},cafe:{name:'Cafe',kind:'social',links:['market','park','work']},park:{name:'Park',kind:'leisure',links:['home','cafe','institute']},work:{name:'Workshop District',kind:'work',links:['market','cafe','home','institute']},institute:{name:'Institute',kind:'education',links:['home','park','work']}};
+const NAMES=['Mara','Kellan','Soren','Ilya','Nia','Tarin','Vera','Jun','Ari','Noor','Cass','Riven'];
+const JOBS=['Mechanic','Courier','Archivist','Teacher','Builder','Medic'];
+const ACTIONS=new Set(['move','work','study','eat','sleep','socialize','relax','shop','idle']);
+function hashSeed(str){let h=2166136261>>>0;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+function rng(seed){let a=seed>>>0;return()=>{a|=0;a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t^=t+Math.imul(t^(t>>>7),61|t);return((t^(t>>>14))>>>0)/4294967296}}
+function clamp(v,a=0,b=100){return Math.max(a,Math.min(b,v))}
+function hm(min){const h=Math.floor((min%1440)/60),m=min%60;return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`}
+function dayTime(w){return `Day ${w.day} • ${hm(w.minute)}`}
+function makeAgent(i,r){return{id:`A${i+1}`,name:NAMES[i],age:20+(i*7)%34,occupation:JOBS[i%JOBS.length],home:'home',location:'home',money:40+Math.floor(r()*80),personality:{discipline:Math.round(25+r()*70),sociability:Math.round(25+r()*70),curiosity:Math.round(25+r()*70),ambition:Math.round(25+r()*70),energy:Math.round(25+r()*70)},needs:{hunger:25+r()*25,energy:70+r()*25,social:35+r()*25,fun:40+r()*25},skills:{work:20+r()*25,study:15+r()*25},mood:60,goal:'build a stable life',relationships:{},memories:[],currentAction:'idle',lastAction:'idle'}}
+function newWorld(seedText='VEIL-001',population=8){const r=rng(hashSeed(seedText));const w={schema:'veil-world-ai',version:WORLD_VERSION,seed:seedText,day:1,minute:480,tick:0,aiTurns:0,population:[],locations:LOCATIONS,events:[],worldMemory:[],createdAt:new Date().toISOString()};for(let i=0;i<population;i++)w.population.push(makeAgent(i,r));for(const a of w.population)for(const b of w.population)if(a.id!==b.id)a.relationships[b.id]=Math.floor(r()*31)-5;addEvent(w,`World initialized. One local AI will control ${population} persistent agents.`);return w}
+function addEvent(w,text){w.events.unshift({tick:w.tick,time:dayTime(w),text:String(text)});w.events=w.events.slice(0,300)}
+function compactAgent(a){return{id:a.id,name:a.name,age:a.age,occupation:a.occupation,location:a.location,money:Math.round(a.money),personality:a.personality,needs:Object.fromEntries(Object.entries(a.needs).map(([k,v])=>[k,Math.round(v)])),skills:Object.fromEntries(Object.entries(a.skills).map(([k,v])=>[k,Math.round(v)])),mood:Math.round(a.mood),goal:a.goal,relationships:Object.fromEntries(Object.entries(a.relationships).map(([k,v])=>[k,Math.round(v)])),memories:a.memories.slice(0,12),currentAction:a.currentAction,lastAction:a.lastAction}}
+function nearby(a){return world.population.filter(x=>x.id!==a.id&&x.location===a.location).map(x=>({id:x.id,name:x.name,relationship:Math.round(a.relationships[x.id]??0),action:x.currentAction}))}
+function buildWorldPrompt(){const agents=world.population.map(a=>({...compactAgent(a),nearby:nearby(a)}));const locations=Object.fromEntries(Object.entries(LOCATIONS).map(([k,v])=>[k,{name:v.name,links:v.links,occupants:world.population.filter(a=>a.location===k).map(a=>a.id)}]));return `<|im_start|>system\nYou are the SINGLE COGNITIVE ENGINE for VEIL WORLD. One model controls every agent. The JSON state is external long-term memory. You do not directly own the world state; you propose decisions and the browser validates them.\n\nCOGNITION RULES:\n- Reason about every agent independently.\n- Personality, needs, goals, relationships, location, nearby people, and memories affect decisions.\n- Agents can disagree, fail, change plans, form relationships, spend money, work, study, rest, eat, socialize, travel, shop, relax, or idle.\n- Do not force symmetry. Do not create friendships because the prompt says so.\n- Never invent remembered events.\n\nPHYSICS RULES:\n- Advance exactly ONE tick.\n- Agents may only move to a linked location.\n- Money cannot go below zero.\n- Needs/mood stay 0..100 after application.\n- Relationships stay -100..100.\n- Use integer deltas.\n- Only meaningful memories belong in new_memories.\n\nAVAILABLE ACTIONS: move, work, study, eat, sleep, socialize, relax, shop, idle.\n\nRETURN ONLY VALID JSON WITH THIS EXACT TOP-LEVEL SHAPE:\n{"tick_summary":"short description","agent_updates":[...one object for EVERY agent...],"world_events":["..."]}\n\nAGENT UPDATE SHAPE:\n{"id":"A1","action":"work","target_location":"work","reason":"short reason","needs":{"energy":-5},"money_delta":6,"skill_delta":{"work":1},"relationship_changes":[{"agent_id":"A2","delta":2}],"new_memories":["..."]}\n\nOnly changed fields are required after id/action/reason. Never output markdown.\n<|im_end|>\n<|im_start|>user\nCURRENT TIME: ${dayTime(world)}\nCURRENT TICK: ${world.tick}\nLOCATIONS: ${JSON.stringify(locations)}\nAGENTS: ${JSON.stringify(agents)}\nWORLD MEMORY: ${JSON.stringify(world.worldMemory.slice(0,80))}\nRECENT EVENTS: ${JSON.stringify(world.events.slice(0,30))}\nAdvance exactly one tick for every agent.\n<|im_end|>\n<|im_start|>assistant\n`}
+function extractJSON(raw){let t=String(raw||'').trim().replace(/^```(?:json)?/i,'').replace(/```$/i,'').trim();const a=t.indexOf('{'),b=t.lastIndexOf('}');if(a<0||b<a)throw Error('AI returned no JSON object');return JSON.parse(t.slice(a,b+1))}
+function validateResult(result){if(!result||!Array.isArray(result.agent_updates))throw Error('Missing agent_updates');const expected=new Set(world.population.map(a=>a.id));const seen=new Set();for(const u of result.agent_updates){if(!u||typeof u.id!=='string'||!expected.has(u.id))throw Error(`Invalid agent id: ${u?.id}`);if(seen.has(u.id))throw Error(`Duplicate update for ${u.id}`);seen.add(u.id);if(!ACTIONS.has(u.action))throw Error(`Invalid action for ${u.id}: ${u.action}`);if(u.target_location&&!LOCATIONS[u.target_location])throw Error(`Invalid location for ${u.id}: ${u.target_location}`)}if(seen.size!==expected.size)throw Error(`AI updated ${seen.size}/${expected.size} agents; tick rejected`)}
+function applyAIResult(result){validateResult(result);const before=new Map(world.population.map(a=>[a.id,{location:a.location,energy:a.needs.energy,money:a.money}]));for(const u of result.agent_updates){const a=world.population.find(x=>x.id===u.id);if(u.target_location&&u.target_location!==a.location){if(!LOCATIONS[a.location].links.includes(u.target_location))continue;a.location=u.target_location}if(u.needs)for(const [k,d] of Object.entries(u.needs))if(k in a.needs)a.needs[k]=clamp(a.needs[k]+safeNum(d));if(u.money_delta!==undefined)a.money=Math.max(0,a.money+safeNum(u.money_delta));if(u.skill_delta)for(const [k,d] of Object.entries(u.skill_delta))if(k in a.skills)a.skills[k]=clamp(a.skills[k]+safeNum(d));if(Array.isArray(u.relationship_changes))for(const x of u.relationship_changes){const n=world.population.find(y=>y.id===x.agent_id);if(n&&n.id!==a.id){const d=safeNum(x.delta);a.relationships[n.id]=clamp((a.relationships[n.id]??0)+d,-100,100);n.relationships[a.id]=clamp((n.relationships[a.id]??0)+d,-100,100)}}if(Array.isArray(u.new_memories))for(const m of u.new_memories.slice(0,3))if(String(m).trim())a.memories.unshift({tick:world.tick,text:String(m).trim()});a.memories=a.memories.slice(0,40);a.lastAction=a.currentAction;a.currentAction=u.action;a.mood=clamp(100-(a.needs.hunger*.25+(100-a.needs.energy)*.22+(100-a.needs.social)*.18+(100-a.needs.fun)*.12));const old=before.get(a.id);if(old.location!==a.location)addEvent(world,`${a.name} moved from ${LOCATIONS[old.location].name} to ${LOCATIONS[a.location].name}.`)}for(const e of Array.isArray(result.world_events)?result.world_events.slice(0,8):[]){addEvent(world,e);world.worldMemory.unshift({tick:world.tick,text:String(e)})}world.worldMemory=world.worldMemory.slice(0,120);world.tick++;world.minute+=Number($('tickRate').value)||15;if(world.minute>=1440){world.minute-=1440;world.day++}world.aiTurns++}
+function safeNum(v){const n=Number(v);return Number.isFinite(n)?n:0}
+async function aiWorldTick(){if(worldBusy||!wllama||!world)return;worldBusy=true;stopWorld();$('worldStep').disabled=true;$('worldAiStatus').textContent='AI is reasoning about the whole society…';try{const prompt=buildWorldPrompt();const result=await wllama.createCompletion(prompt,{nPredict:2200,sampling:{temp:.62,top_k:40,top_p:.9}});const raw=typeof result==='string'?result:(result?.choices?.[0]?.text??'');const parsed=extractJSON(raw);applyAIResult(parsed);$('worldAiStatus').textContent=`AI turn ${world.aiTurns} committed — ${parsed.tick_summary||'state advanced'}`;renderWorld();}catch(e){$('worldAiStatus').textContent='Tick rejected: '+(e?.message||e);addEvent(world,'AI produced an invalid tick; no world state was advanced.');renderWorld()}finally{worldBusy=false;$('worldStep').disabled=!wllama;$('worldStart').disabled=!wllama}}
+function renderWorld(){if(!world)return;$('worldClock').textContent=dayTime(world);$('worldPopulation').textContent=world.population.length;$('worldActions').textContent=world.aiTurns;$('worldEvents').textContent=world.events.length;$('worldMemories').textContent=world.population.reduce((n,a)=>n+a.memories.length,0)+world.worldMemory.length;$('worldBadge').textContent=worldRunning?'WORLD RUNNING':'WORLD PAUSED';$('worldBadge').className='tag '+(worldRunning?'ok':'');$('worldMap').innerHTML=Object.entries(LOCATIONS).map(([id,l])=>{const people=world.population.filter(a=>a.location===id);return `<div class="loc"><b>${escapeHTML(l.name)}</b><small>${people.length} agent${people.length===1?'':'s'}${people.length?' · '+people.map(a=>escapeHTML(a.name)).join(', '):''}</small></div>`}).join('');$('agentGrid').innerHTML=world.population.map(a=>`<div class="agent ${a.id===selectedAgentId?'selected':''}" data-agent="${a.id}"><b>${escapeHTML(a.name)}</b><div class="micro">${escapeHTML(a.occupation)} · ${escapeHTML(a.currentAction)} · ${escapeHTML(LOCATIONS[a.location].name)}</div><div class="stat"><span>Energy</span><span>${Math.round(a.needs.energy)}</span></div><div class="bar"><i style="width:${a.needs.energy}%"></i></div><div class="stat"><span>Mood</span><span>${Math.round(a.mood)}</span></div><div class="bar"><i style="width:${a.mood}%"></i></div></div>`).join('');document.querySelectorAll('.agent').forEach(el=>el.onclick=()=>{selectedAgentId=el.dataset.agent;renderWorld()});$('worldLog').innerHTML=world.events.map(e=>`<div class="logline"><b>${escapeHTML(e.time)}</b> — ${escapeHTML(e.text)}</div>`).join('');const a=world.population.find(x=>x.id===selectedAgentId)||world.population[0];if(a){selectedAgentId=a.id;const top=Object.entries(a.relationships).sort((x,y)=>y[1]-x[1])[0];const friend=top?world.population.find(x=>x.id===top[0]):null;$('agentInspector').innerHTML=`<b style="font-size:19px">${escapeHTML(a.name)}</b><div class="micro">${escapeHTML(a.occupation)} · age ${a.age} · ${escapeHTML(LOCATIONS[a.location].name)}</div><p><span class="pill">${escapeHTML(a.currentAction)}</span> <span class="pill">${escapeHTML(a.goal)}</span></p>${['hunger','energy','social','fun'].map(k=>`<div class="stat"><span>${k}</span><span>${Math.round(a.needs[k])}</span></div><div class="bar"><i style="width:${a.needs[k]}%"></i></div>`).join('')}<p class="micro">Money ${Math.round(a.money)} · Work ${Math.round(a.skills.work)} · Study ${Math.round(a.skills.study)}</p><p class="micro">Strongest relationship: ${friend?escapeHTML(friend.name)+' ('+Math.round(top[1])+')':'none'}</p><p class="micro">Persistent memories: ${a.memories.length}</p>`}}
+function renderWorldJson(){if(!world)return;$('worldJson').textContent=JSON.stringify(world,null,2)}
+function stopWorld(){worldRunning=false;clearInterval(worldTimer);worldTimer=null;renderWorldBadgeOnly()}
+function renderWorldBadgeOnly(){if($('worldBadge')){$('worldBadge').textContent=worldRunning?'WORLD RUNNING':'WORLD PAUSED';$('worldBadge').className='tag '+(worldRunning?'ok':'')}}
+function startWorld(){if(worldRunning||!wllama)return;worldRunning=true;renderWorldBadgeOnly();worldTimer=setInterval(()=>{if(!worldBusy)aiWorldTick()},700)}
+function resetWorld(){stopWorld();const pop=Math.max(2,Math.min(12,Number($('population').value)||8));world=newWorld($('worldSeed').value.trim()||'VEIL-001',pop);selectedAgentId=world.population[0]?.id||null;renderWorld();$('worldAiStatus').textContent='New deterministic world created. Its future is model-driven.'}
+function downloadJSON(name,data){const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function saveWorld(){if(!world)return;world.exportedAt=new Date().toISOString();downloadJSON(`veil-world-${world.seed}-tick-${world.tick}.json`,world);$('worldAiStatus').textContent='World state + long-term memory exported. This file is the society memory.';renderWorld()}
+async function loadWorld(file){try{const x=JSON.parse(await file.text());if(x.schema!=='veil-world-ai'||x.version!==WORLD_VERSION)throw Error('Incompatible VEIL World JSON version.');if(!Array.isArray(x.population)||!x.population.length)throw Error('World has no agents.');for(const a of x.population){if(!a.id||!LOCATIONS[a.location])throw Error(`Invalid agent state: ${a.id}`)}stopWorld();world=x;selectedAgentId=world.population[0].id;renderWorld();$('worldAiStatus').textContent='World JSON restored. The loaded file is now the model’s external long-term memory.'}catch(e){alert(e?.message||e)}}
+$('worldStart').onclick=()=>worldRunning?stopWorld():startWorld();$('worldStep').onclick=()=>{stopWorld();aiWorldTick()};$('worldReset').onclick=resetWorld;$('worldSave').onclick=saveWorld;$('worldLoadFile').onchange=e=>{const f=e.target.files?.[0];if(f)loadWorld(f)};
+
+// ---------- init ----------
+(async()=>{try{checkGPU();await openDB();await loadManualMemories();$('debug').textContent='IndexedDB: ready\nWorld schema: '+WORLD_VERSION+'\nInference: waiting for local model\nTick contract: strict JSON + full-agent coverage\nPersistence: World JSON export/import';}catch(e){$('debug').textContent='Startup error: '+(e?.message||e)}})();
+world=newWorld('VEIL-001',8);selectedAgentId=world.population[0].id;renderWorld();
+</script>
+</body>
+</html>
